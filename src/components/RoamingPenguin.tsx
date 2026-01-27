@@ -2,18 +2,53 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
-const Penguin = ({ position }: { position: [number, number, number] }) => {
+interface PenguinProps {
+  position: [number, number, number];
+  isJumping: boolean;
+}
+
+const Penguin = ({ position, isJumping }: PenguinProps) => {
   const groupRef = useRef<THREE.Group>(null);
-  const [waddle, setWaddle] = useState(0);
+  const leftWingRef = useRef<THREE.Mesh>(null);
+  const rightWingRef = useRef<THREE.Mesh>(null);
+  const jumpStartTime = useRef(0);
 
   useFrame((state) => {
     if (groupRef.current) {
       // Waddle animation
-      setWaddle(Math.sin(state.clock.elapsedTime * 8) * 0.1);
+      const waddle = Math.sin(state.clock.elapsedTime * 8) * 0.1;
       groupRef.current.rotation.z = waddle;
-      
-      // Subtle bobbing
-      groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 4) * 0.05;
+
+      // Jump animation
+      if (isJumping) {
+        if (jumpStartTime.current === 0) {
+          jumpStartTime.current = state.clock.elapsedTime;
+        }
+        const jumpProgress = (state.clock.elapsedTime - jumpStartTime.current) * 4;
+        const jumpHeight = Math.sin(jumpProgress * Math.PI) * 0.8;
+        const rotation = Math.sin(jumpProgress * Math.PI) * 0.3;
+        
+        groupRef.current.position.y = position[1] + Math.max(0, jumpHeight);
+        groupRef.current.rotation.x = rotation;
+        
+        // Flap wings during jump
+        if (leftWingRef.current && rightWingRef.current) {
+          const flapAngle = Math.sin(state.clock.elapsedTime * 20) * 0.5;
+          leftWingRef.current.rotation.z = -0.3 - Math.abs(flapAngle);
+          rightWingRef.current.rotation.z = 0.3 + Math.abs(flapAngle);
+        }
+      } else {
+        jumpStartTime.current = 0;
+        // Subtle bobbing when not jumping
+        groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 4) * 0.05;
+        groupRef.current.rotation.x = 0;
+        
+        // Reset wings
+        if (leftWingRef.current && rightWingRef.current) {
+          leftWingRef.current.rotation.z = -0.3;
+          rightWingRef.current.rotation.z = 0.3;
+        }
+      }
     }
   });
 
@@ -62,13 +97,13 @@ const Penguin = ({ position }: { position: [number, number, number] }) => {
       </mesh>
       
       {/* Left Wing */}
-      <mesh position={[-0.4, 0, 0]} rotation={[0, 0, -0.3]}>
+      <mesh ref={leftWingRef} position={[-0.4, 0, 0]} rotation={[0, 0, -0.3]}>
         <capsuleGeometry args={[0.1, 0.35, 4, 8]} />
         <meshStandardMaterial color="#1a1a2e" />
       </mesh>
       
       {/* Right Wing */}
-      <mesh position={[0.4, 0, 0]} rotation={[0, 0, 0.3]}>
+      <mesh ref={rightWingRef} position={[0.4, 0, 0]} rotation={[0, 0, 0.3]}>
         <capsuleGeometry args={[0.1, 0.35, 4, 8]} />
         <meshStandardMaterial color="#1a1a2e" />
       </mesh>
@@ -92,6 +127,14 @@ const RoamingPenguin = () => {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [direction, setDirection] = useState({ x: 1, y: 0.5 });
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
+
+  const handleClick = () => {
+    if (!isJumping) {
+      setIsJumping(true);
+      setTimeout(() => setIsJumping(false), 500);
+    }
+  };
 
   useEffect(() => {
     const speed = 1.5;
@@ -135,7 +178,8 @@ const RoamingPenguin = () => {
 
   return (
     <div
-      className="fixed pointer-events-none z-50"
+      className="fixed z-50 cursor-pointer"
+      onClick={handleClick}
       style={{
         left: position.x,
         top: position.y,
@@ -153,7 +197,7 @@ const RoamingPenguin = () => {
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 2, 2]} intensity={1} />
         <pointLight position={[-2, -1, 2]} intensity={0.5} color="#a855f7" />
-        <Penguin position={[0, -0.3, 0]} />
+        <Penguin position={[0, -0.3, 0]} isJumping={isJumping} />
       </Canvas>
     </div>
   );
