@@ -4,46 +4,105 @@ import * as THREE from 'three';
 
 interface PenguinProps {
   position: [number, number, number];
+  isWalking: boolean;
+  isFacingUser: boolean;
   isJumping: boolean;
 }
 
-const Penguin = ({ position, isJumping }: PenguinProps) => {
+const Penguin = ({ position, isWalking, isFacingUser, isJumping }: PenguinProps) => {
   const groupRef = useRef<THREE.Group>(null);
   const leftWingRef = useRef<THREE.Mesh>(null);
   const rightWingRef = useRef<THREE.Mesh>(null);
+  const leftFootRef = useRef<THREE.Mesh>(null);
+  const rightFootRef = useRef<THREE.Mesh>(null);
+  const bodyRef = useRef<THREE.Mesh>(null);
   const jumpStartTime = useRef(0);
+  const targetRotationY = useRef(0);
 
   useFrame((state) => {
-    if (groupRef.current) {
-      // Waddle animation
-      const waddle = Math.sin(state.clock.elapsedTime * 8) * 0.1;
-      groupRef.current.rotation.z = waddle;
+    if (!groupRef.current) return;
 
-      // Jump animation
-      if (isJumping) {
-        if (jumpStartTime.current === 0) {
-          jumpStartTime.current = state.clock.elapsedTime;
+    const time = state.clock.elapsedTime;
+
+    // Handle rotation towards user
+    if (isFacingUser) {
+      targetRotationY.current = 0; // Face forward (towards user)
+    } else if (isWalking) {
+      targetRotationY.current = -Math.PI / 2; // Face right (walking direction)
+    }
+
+    // Smooth rotation interpolation
+    groupRef.current.rotation.y = THREE.MathUtils.lerp(
+      groupRef.current.rotation.y,
+      targetRotationY.current,
+      0.1
+    );
+
+    // Jump animation
+    if (isJumping) {
+      if (jumpStartTime.current === 0) {
+        jumpStartTime.current = time;
+      }
+      const jumpProgress = (time - jumpStartTime.current) * 4;
+      const jumpHeight = Math.sin(jumpProgress * Math.PI) * 0.6;
+      
+      groupRef.current.position.y = position[1] + Math.max(0, jumpHeight);
+      
+      // Flap wings during jump
+      if (leftWingRef.current && rightWingRef.current) {
+        const flapAngle = Math.sin(time * 25) * 0.6;
+        leftWingRef.current.rotation.z = -0.3 - Math.abs(flapAngle);
+        rightWingRef.current.rotation.z = 0.3 + Math.abs(flapAngle);
+      }
+    } else {
+      jumpStartTime.current = 0;
+
+      if (isWalking) {
+        // Realistic penguin waddle
+        const waddleSpeed = 6;
+        const waddleAmount = 0.15;
+        const bobAmount = 0.08;
+        const tiltAmount = 0.12;
+
+        // Side-to-side waddle (body rotation)
+        groupRef.current.rotation.z = Math.sin(time * waddleSpeed) * waddleAmount;
+        
+        // Up and down bob (synced with steps)
+        groupRef.current.position.y = position[1] + Math.abs(Math.sin(time * waddleSpeed)) * bobAmount;
+        
+        // Slight forward/back tilt
+        groupRef.current.rotation.x = Math.sin(time * waddleSpeed * 2) * 0.05;
+
+        // Feet animation - alternating steps
+        if (leftFootRef.current && rightFootRef.current) {
+          const stepPhase = Math.sin(time * waddleSpeed);
+          leftFootRef.current.position.z = 0.1 + Math.max(0, stepPhase) * 0.1;
+          leftFootRef.current.position.y = -0.55 + Math.max(0, stepPhase) * 0.05;
+          rightFootRef.current.position.z = 0.1 + Math.max(0, -stepPhase) * 0.1;
+          rightFootRef.current.position.y = -0.55 + Math.max(0, -stepPhase) * 0.05;
         }
-        const jumpProgress = (state.clock.elapsedTime - jumpStartTime.current) * 4;
-        const jumpHeight = Math.sin(jumpProgress * Math.PI) * 0.8;
-        const rotation = Math.sin(jumpProgress * Math.PI) * 0.3;
-        
-        groupRef.current.position.y = position[1] + Math.max(0, jumpHeight);
-        groupRef.current.rotation.x = rotation;
-        
-        // Flap wings during jump
+
+        // Subtle wing swing while walking
         if (leftWingRef.current && rightWingRef.current) {
-          const flapAngle = Math.sin(state.clock.elapsedTime * 20) * 0.5;
-          leftWingRef.current.rotation.z = -0.3 - Math.abs(flapAngle);
-          rightWingRef.current.rotation.z = 0.3 + Math.abs(flapAngle);
+          const wingSwing = Math.sin(time * waddleSpeed) * 0.15;
+          leftWingRef.current.rotation.z = -0.3 + wingSwing;
+          rightWingRef.current.rotation.z = 0.3 - wingSwing;
         }
       } else {
-        jumpStartTime.current = 0;
-        // Subtle bobbing when not jumping
-        groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 4) * 0.05;
+        // Idle animation - subtle breathing and looking around
+        groupRef.current.position.y = position[1] + Math.sin(time * 2) * 0.02;
+        groupRef.current.rotation.z = Math.sin(time * 0.5) * 0.03;
         groupRef.current.rotation.x = 0;
-        
-        // Reset wings
+
+        // Reset feet
+        if (leftFootRef.current && rightFootRef.current) {
+          leftFootRef.current.position.z = 0.1;
+          leftFootRef.current.position.y = -0.55;
+          rightFootRef.current.position.z = 0.1;
+          rightFootRef.current.position.y = -0.55;
+        }
+
+        // Subtle wing movement
         if (leftWingRef.current && rightWingRef.current) {
           leftWingRef.current.rotation.z = -0.3;
           rightWingRef.current.rotation.z = 0.3;
@@ -55,7 +114,7 @@ const Penguin = ({ position, isJumping }: PenguinProps) => {
   return (
     <group ref={groupRef} position={position} scale={0.7}>
       {/* Body */}
-      <mesh position={[0, 0, 0]}>
+      <mesh ref={bodyRef} position={[0, 0, 0]}>
         <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
         <meshStandardMaterial color="#1a1a2e" />
       </mesh>
@@ -109,13 +168,13 @@ const Penguin = ({ position, isJumping }: PenguinProps) => {
       </mesh>
       
       {/* Left Foot */}
-      <mesh position={[-0.12, -0.55, 0.1]} rotation={[0.5, 0, 0]}>
+      <mesh ref={leftFootRef} position={[-0.12, -0.55, 0.1]} rotation={[0.5, 0, 0]}>
         <boxGeometry args={[0.12, 0.05, 0.2]} />
         <meshStandardMaterial color="#ff9500" />
       </mesh>
       
       {/* Right Foot */}
-      <mesh position={[0.12, -0.55, 0.1]} rotation={[0.5, 0, 0]}>
+      <mesh ref={rightFootRef} position={[0.12, -0.55, 0.1]} rotation={[0.5, 0, 0]}>
         <boxGeometry args={[0.12, 0.05, 0.2]} />
         <meshStandardMaterial color="#ff9500" />
       </mesh>
@@ -124,10 +183,11 @@ const Penguin = ({ position, isJumping }: PenguinProps) => {
 };
 
 const RoamingPenguin = () => {
-  const [position, setPosition] = useState({ x: 100, y: 100 });
-  const [direction, setDirection] = useState({ x: 1, y: 0.5 });
-  const [isFlipped, setIsFlipped] = useState(false);
+  const [positionX, setPositionX] = useState(-150);
+  const [isWalking, setIsWalking] = useState(true);
+  const [isFacingUser, setIsFacingUser] = useState(false);
   const [isJumping, setIsJumping] = useState(false);
+  const positionY = typeof window !== 'undefined' ? window.innerHeight - 200 : 500;
 
   const handleClick = () => {
     if (!isJumping) {
@@ -137,56 +197,58 @@ const RoamingPenguin = () => {
   };
 
   useEffect(() => {
-    const speed = 1.5;
+    const centerX = typeof window !== 'undefined' ? window.innerWidth / 2 - 70 : 500;
+    const rightEdge = typeof window !== 'undefined' ? window.innerWidth + 150 : 1500;
+    const speed = 2;
+    let isPaused = false;
+    let pauseTimeout: NodeJS.Timeout | null = null;
+
     const interval = setInterval(() => {
-      setPosition((prev) => {
-        let newX = prev.x + direction.x * speed;
-        let newY = prev.y + direction.y * speed;
-        let newDirX = direction.x;
-        let newDirY = direction.y;
+      if (isPaused) return;
 
-        // Bounce off edges
-        if (newX <= 0 || newX >= window.innerWidth - 140) {
-          newDirX = -direction.x;
-          setIsFlipped(newDirX < 0);
-        }
-        if (newY <= 0 || newY >= window.innerHeight - 180) {
-          newDirY = -direction.y;
-        }
+      setPositionX((prev) => {
+        const newX = prev + speed;
 
-        // Random direction changes
-        if (Math.random() < 0.005) {
-          newDirX = (Math.random() - 0.5) * 2;
-          newDirY = (Math.random() - 0.5) * 2;
-          const magnitude = Math.sqrt(newDirX * newDirX + newDirY * newDirY);
-          newDirX /= magnitude;
-          newDirY /= magnitude;
-          setIsFlipped(newDirX < 0);
+        // Check if penguin reached center
+        if (prev < centerX && newX >= centerX && !isPaused) {
+          isPaused = true;
+          setIsWalking(false);
+          setIsFacingUser(true);
+
+          // Resume after 3-4 seconds
+          pauseTimeout = setTimeout(() => {
+            setIsFacingUser(false);
+            setIsWalking(true);
+            isPaused = false;
+          }, 3500);
+
+          return centerX;
         }
 
-        setDirection({ x: newDirX, y: newDirY });
+        // Reset when penguin exits right side
+        if (newX > rightEdge) {
+          return -150;
+        }
 
-        return {
-          x: Math.max(0, Math.min(window.innerWidth - 140, newX)),
-          y: Math.max(0, Math.min(window.innerHeight - 180, newY)),
-        };
+        return newX;
       });
     }, 16);
 
-    return () => clearInterval(interval);
-  }, [direction]);
+    return () => {
+      clearInterval(interval);
+      if (pauseTimeout) clearTimeout(pauseTimeout);
+    };
+  }, []);
 
   return (
     <div
       className="fixed z-50 cursor-pointer"
       onClick={handleClick}
       style={{
-        left: position.x,
-        top: position.y,
+        left: positionX,
+        top: positionY,
         width: 140,
         height: 180,
-        transform: `scaleX(${isFlipped ? -1 : 1})`,
-        transition: 'transform 0.3s ease',
       }}
     >
       <Canvas
@@ -197,7 +259,12 @@ const RoamingPenguin = () => {
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 2, 2]} intensity={1} />
         <pointLight position={[-2, -1, 2]} intensity={0.5} color="#a855f7" />
-        <Penguin position={[0, -0.3, 0]} isJumping={isJumping} />
+        <Penguin 
+          position={[0, -0.3, 0]} 
+          isWalking={isWalking} 
+          isFacingUser={isFacingUser}
+          isJumping={isJumping} 
+        />
       </Canvas>
     </div>
   );
