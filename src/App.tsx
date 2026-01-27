@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navbar from "@/components/Navbar";
+import RoamingPenguin from "@/components/RoamingPenguin";
 import Index from "./pages/Index";
 import ToolPage from "./pages/ToolPage";
 import NotFound from "./pages/NotFound";
@@ -19,6 +20,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Navbar />
+          <RoamingPenguin />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/tool/:slug" element={<ToolPage />} />
