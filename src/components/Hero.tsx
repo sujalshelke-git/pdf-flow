@@ -2,7 +2,7 @@ import SearchBar from './SearchBar';
 
 const Hero = () => {
   return (
-    <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
+    <section className="relative pt-32 pb-16 md:pt-40 md:pb-1 overflow-hidden">
       {/* Background gradient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
@@ -23,9 +23,9 @@ const Hero = () => {
         </div>
 
         {/* Search bar */}
-        <div className="max-w-2xl mx-auto opacity-0 animate-fade-up stagger-3" style={{ animationFillMode: 'forwards' }}>
+        {/* <div className="max-w-2xl mx-auto opacity-0 animate-fade-up stagger-3" style={{ animationFillMode: 'forwards' }}>
           <SearchBar />
-        </div>
+        </div> */}
       </div>
     </section>
   );
