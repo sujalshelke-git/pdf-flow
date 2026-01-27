@@ -18,7 +18,7 @@ const Penguin = ({ position }: { position: [number, number, number] }) => {
   });
 
   return (
-    <group ref={groupRef} position={position} scale={0.4}>
+    <group ref={groupRef} position={position} scale={0.7}>
       {/* Body */}
       <mesh position={[0, 0, 0]}>
         <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
@@ -103,11 +103,11 @@ const RoamingPenguin = () => {
         let newDirY = direction.y;
 
         // Bounce off edges
-        if (newX <= 0 || newX >= window.innerWidth - 80) {
+        if (newX <= 0 || newX >= window.innerWidth - 140) {
           newDirX = -direction.x;
           setIsFlipped(newDirX < 0);
         }
-        if (newY <= 0 || newY >= window.innerHeight - 100) {
+        if (newY <= 0 || newY >= window.innerHeight - 180) {
           newDirY = -direction.y;
         }
 
@@ -124,8 +124,8 @@ const RoamingPenguin = () => {
         setDirection({ x: newDirX, y: newDirY });
 
         return {
-          x: Math.max(0, Math.min(window.innerWidth - 80, newX)),
-          y: Math.max(0, Math.min(window.innerHeight - 100, newY)),
+          x: Math.max(0, Math.min(window.innerWidth - 140, newX)),
+          y: Math.max(0, Math.min(window.innerHeight - 180, newY)),
         };
       });
     }, 16);
@@ -139,8 +139,8 @@ const RoamingPenguin = () => {
       style={{
         left: position.x,
         top: position.y,
-        width: 80,
-        height: 100,
+        width: 140,
+        height: 180,
         transform: `scaleX(${isFlipped ? -1 : 1})`,
         transition: 'transform 0.3s ease',
       }}
