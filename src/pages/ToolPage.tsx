@@ -95,12 +95,14 @@ const ToolPage = () => {
             <UploadArea compact onChange={setFiles} />
 
             <ActionButton
-              className="w-full mt-4"
-              onClick={handleProcess}
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : 'Process Files'}
-            </ActionButton>
+  className="w-full mt-4"
+  onClick={handleProcess}
+  loading={loading}
+  disabled={files.length === 0}
+>
+  Process Files
+</ActionButton>
+
           </div>
         </div>
       </div>
