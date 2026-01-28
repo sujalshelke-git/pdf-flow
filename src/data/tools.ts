@@ -31,10 +31,11 @@ export const tools = [
     name: 'PDF to Image',
     description: 'Extract images from PDF files',
     icon: FileImage,
-    api: '/convert/office',
+    api: '/convert/pdf-to-image',
     gradient: 'from-cyan-500 to-blue-500',
   },
  
+  
   {
     slug: 'excel-to-pdf',
     name: 'Excel to PDF',
