@@ -60,4 +60,21 @@ export const tools = [
     api: '/convert/office',
     gradient: 'from-purple-500 to-violet-500',
   },
+
+  {
+    slug: 'PDF Merge',
+    name: 'PDF Merge',
+    description: 'Extract images from PDF files',
+    icon:  Merge,
+    api: '/pdf/merge',
+    gradient: 'from-cyan-500 to-blue-500',
+  },
+  {
+    slug: 'PDF Split',
+    name: 'PDF Split',
+    description: 'Convert plain text into beautiful PDFs',
+    icon: FileText,
+    api: '/pdf/split',
+    gradient: 'from-violet-500 to-purple-500',
+  }
 ];
